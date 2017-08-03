@@ -9,7 +9,10 @@ router.get('/', function(req, res, next) {
 
 router.get('/gather', function(req,res){
 	console.log('THIS IS IN ROUTE');
-	dispatch.initializeMatching();
+	var lists = dispatch.initializeMatching();
+	console.log("LISTS: "+lists);
+	res.render('result', {lists: lists});
 });
+
 
 module.exports = router;
