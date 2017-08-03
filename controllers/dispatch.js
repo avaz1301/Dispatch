@@ -1,7 +1,8 @@
 "use strict"
-var axios = require('axios');
+var axios    = require('axios');
 var Bluebird = require('bluebird');
 
+var now;
 var droneSpeed    = 20 //drone speed in km/h
 var depotLat      = -37.816218;
 var depotLong     = 144.964068;
@@ -12,22 +13,29 @@ var packageList   = [];
 var paired_list   = [];
 var unpaired_list = [];
 
+//start function call sequence to initialize and complete
+//drone matching
 var initializeMatching = function(res){
+	now = Math.floor(new Date().getTime()/1000); //time currently
 	resetAll();
+	//1.get drones, 2.get packages,
+	//3.match packagees to drones 
 	promiseDrone().then(function(data){
 		return promisePackage();
 	}).then(function(data){
 		return promisematchPackage()
 	}).then(function(data){
+		//take resulting lists and render to page
 		res.render('result', { list: data });
-	})
-	.catch(function(err){
+	}).catch(function(err){
 		console.log("Error: "+err);
 	})
 }
 
 //fetch random drone list from API
 var promiseDrone = function(){
+	//promise obj. resolves when drones are retrieves
+	//returns drone list
 	var promise = new Bluebird(function(resolve, reject){
 		axios.get('https://codetest.kube.getswift.co/drones')
 		.then(function(res){
@@ -49,6 +57,8 @@ var promiseDrone = function(){
 
 //fetch random package list from API
 var promisePackage = function(){
+	//promise obj. resolves when packages are retrieves
+	//returns package list
 	var promise = new Bluebird(function(resolve, reject){
 		axios.get('https://codetest.kube.getswift.co/packages')
 		.then(function(res){
@@ -69,9 +79,11 @@ var promisematchPackage = function(){
 		//first find a free drone to pair with
 		packageList.forEach(function(p){
 			var match = false;
+			//check through list of free drones
 			for(var i = freeDroneList.length - 1; i >= 0; i--) {
 				match = isMatch(freeDroneList[i],p);
 				if(match){
+					//add matched drone/package to paired list
 					paired_list.push({
 						"droneId": freeDroneList.splice(i, 1)[0].droneId,
 						"packageId": p.packageId
@@ -79,12 +91,14 @@ var promisematchPackage = function(){
 					break;
 				}
 			}
-			//if no free drones pair with quickest occupied drone
+			//if no free drones pair with viable occupied drone
 			if(!match && freeDroneList.length <= 0){
 				match = false;
+				//check through list of occupied drones
 				for(var i = occDroneList.length - 1; i >= 0; i--) {
 					match = isOccMatch(occDroneList[i],p);
 					if(match){
+						//add matched drone/package to paired list
 						paired_list.push({
 							"droneId": occDroneList.splice(i, 1)[0].droneId,
 							"packageId": p.packageId
@@ -98,6 +112,7 @@ var promisematchPackage = function(){
 		console.log(JSON.stringify(paired_list));
 		console.log("\n");
 		console.log(JSON.stringify(unpaired_list));	
+		//return lists of paired and unpaired packages
 		resolve({
 			"paired_list": paired_list,
 			"unpaired_list": unpaired_list
@@ -106,24 +121,45 @@ var promisematchPackage = function(){
 	return promise;
 }
 
+//isOccmatch checks if occupied drone can arrive at 
+//the destination before package deadline
 var isOccMatch = function(drone, pack){
-	var flag     = false;
 	var ttl_dist = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, drone.packages[0].destination.latitude, drone.packages[0].destination.longitude) 
 		+ distanceBetweenPointsKm(drone.packages[0].destination.latitude, drone.packages[0].destination.longitude, depotLat, depotLong) 
 		+ distanceBetweenPointsKm(depotLat, depotLong, pack.destination.latitude, pack.destination.longitude);
-	var now      = Math.floor(new Date().getTime()/1000);
-	var del_time = now + calculateTransportTime(ttl_dist);
+	return canDeliver(ttl_dist, pack);
+	// var flag     = false;
+	//calc total distance from drone position to destination, from 
+	//destination back to depot, and from depot to new destination
+	// var now      = Math.floor(new Date().getTime()/1000);
+	// var del_time = now + calculateTransportTime(ttl_dist);
+	// (del_time < pack.deadline)? flag = true : flag = false;
+	// return flag;
+}
+
+//isMatch checks if free drone can arrive at 
+//the destination before package deadline
+var isMatch = function(drone, pack){
+	var dist     = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, pack.destination.latitude, pack.destination.longitude);
+	return canDeliver(dist, pack)
+	// var now      = Math.floor(new Date().getTime()/1000); //get current time in seconds
+	// var del_time = now + calculateTransportTime(dist);
+	// (del_time < pack.deadline)? flag = true : flag = false;
+	// return flag;
+}
+
+var canDeliver = function(dist, pack){
+	var flag=false;
+	var del_time = now + calculateTransportTime(dist);
 	(del_time < pack.deadline)? flag = true : flag = false;
 	return flag;
 }
 
-var isMatch = function(drone, pack){
-	var flag     = false;
-	var dist     = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, pack.destination.latitude, pack.destination.longitude);
-	var now      = Math.floor(new Date().getTime()/1000);
-	var del_time = now + calculateTransportTime(dist);
-	(del_time < pack.deadline)? flag = true : flag = false;
-	return flag;
+//calcTransportTime find time of transport for a given 
+//distance by (distance/speed)
+var calculateTransportTime = function(dist){
+	// km/(km/hr) => returns time in sec
+	return Math.floor((dist/droneSpeed)*3600); 
 }
 
 var convertUnixTime = function(unix_timestamp){
@@ -131,12 +167,9 @@ var convertUnixTime = function(unix_timestamp){
 	console.log(date);
 }
 
-var calculateTransportTime = function(dist){
-	return Math.floor((dist/droneSpeed)*3600); // km/(km/hr) => returns time in sec
-}
-
-//:::  Worldwide cities and other features databases with latitude longitude  :::
-//:::  are available at http://www.geodatasource.com             
+// The distanceBetweenPointsKm makes use of the haversine formula,
+// which calculates the distance between two points on a sphere. 
+// Source: http://www.geodatasource.com             
 var distanceBetweenPointsKm = function(lat1, long1, lat2, long2){
 	var radlat1  = lat1 * Math.PI/180;
 	var radlat2  = lat2 * Math.PI/180;
@@ -146,10 +179,12 @@ var distanceBetweenPointsKm = function(lat1, long1, lat2, long2){
 	distance     = Math.acos(distance);
 	distance     = distance * 180/Math.PI;
 	distance     = distance * 60 * 1.1515;
+	//convert distance to km
 	distance     = distance * 1.609344;
-	return distance; //distance in km
+	return distance; //returned in km
 }
 
+//reset all arrays for next dispatch call
 var resetAll = function(){
 	droneList     = []; 
 	occDroneList  = [];

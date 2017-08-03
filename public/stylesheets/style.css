@@ -15,8 +15,17 @@ a {
 	-o-background-size: cover;
 }
 
+.home-hero{
+	height: 100vh;
+	background: url(../images/drone_sun.jpg) no-repeat;
+	background-size: cover;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+}
+
 .header-text{
-	padding-top: 100px;
+	padding-top: 150px;
 	color: #ffffff;
 }
 
