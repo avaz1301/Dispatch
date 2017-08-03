@@ -5,8 +5,19 @@
 	</div>
 	
 </div>
-<div class="container">
+<div class="container text-center">
+	<h1>Results for Drone/Package Matching</h1>
 	<div class="content">
-		{{lists.paired_list}}
+		Paried List: <strong>[</strong>
+		{{#each list.paired_list}}
+		    { droneId: {{ this.droneId }}, packageId: {{this.packageId}} }  
+		{{/each}}
+		<strong>]</strong>
+		<p> </p>
+		Un-paired List: <strong>[</strong>
+		{{#each list.unpaired_list}}
+		    { packageId: {{ this.packageId }} }
+		{{/each}}
+		<strong>]</strong>
 	</div>
 </div>
