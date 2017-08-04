@@ -9,15 +9,15 @@
 <div class="container text-center">
 	<h1>Results for Drone/Package Matching</h1>
 	<div class="content">
-		Paried List: <strong>[</strong>
+		Assignments: <strong>[</strong>
 		{{#each list.paired_list}}
 		    { droneId: {{ this.droneId }}, packageId: {{this.packageId}} }  
 		{{/each}}
 		<strong>]</strong>
 		<p> </p>
-		Un-paired List: <strong>[</strong>
+		Unassigned Package Ids: <strong>[</strong>
 		{{#each list.unpaired_list}}
-		    { packageId: {{ this.packageId }} }
+		    {{ this.packageId }}, 
 		{{/each}}
 		<strong>]</strong>
 	</div>

@@ -15,21 +15,13 @@ var unpaired_list = [];
 
 //start function call sequence to initialize and complete
 //drone matching
-var initializeMatching = function(res){
-	now = Math.floor(new Date().getTime()/1000); //time currently
-	resetAll();
-	//1.get drones, 2.get packages,
-	//3.match packagees to drones 
-	promiseDrone().then(function(data){
-		return promisePackage();
-	}).then(function(data){
-		return promisematchPackage()
-	}).then(function(data){
-		//take resulting lists and render to page
-		res.render('result', { list: data });
-	}).catch(function(err){
-		console.log("Error: "+err);
+var initializeMatching = function(){
+	var promise = new Bluebird(function(resolve, reject){
+		now = Math.floor(new Date().getTime()/1000); //time currently
+		resetAll();
+		resolve();
 	})
+	return promise;
 }
 
 //fetch random drone list from API
@@ -83,7 +75,8 @@ var promisematchPackage = function(){
 			for(var i = freeDroneList.length - 1; i >= 0; i--) {
 				match = isMatch(freeDroneList[i],p);
 				if(match){
-					//add matched drone/package to paired list
+					//add matched drone/package to paired list, remove paired drone
+					//from respective list
 					paired_list.push({
 						"droneId": freeDroneList.splice(i, 1)[0].droneId,
 						"packageId": p.packageId
@@ -91,14 +84,15 @@ var promisematchPackage = function(){
 					break;
 				}
 			}
-			//if no free drones pair with viable occupied drone
+			//if no free drones, pair with viable occupied drone
 			if(!match && freeDroneList.length <= 0){
 				match = false;
 				//check through list of occupied drones
 				for(var i = occDroneList.length - 1; i >= 0; i--) {
 					match = isOccMatch(occDroneList[i],p);
 					if(match){
-						//add matched drone/package to paired list
+						//add matched drone/package to paired list, remove paired drone
+						//from respective list
 						paired_list.push({
 							"droneId": occDroneList.splice(i, 1)[0].droneId,
 							"packageId": p.packageId
@@ -128,24 +122,14 @@ var isOccMatch = function(drone, pack){
 		+ distanceBetweenPointsKm(drone.packages[0].destination.latitude, drone.packages[0].destination.longitude, depotLat, depotLong) 
 		+ distanceBetweenPointsKm(depotLat, depotLong, pack.destination.latitude, pack.destination.longitude);
 	return canDeliver(ttl_dist, pack);
-	// var flag     = false;
-	//calc total distance from drone position to destination, from 
-	//destination back to depot, and from depot to new destination
-	// var now      = Math.floor(new Date().getTime()/1000);
-	// var del_time = now + calculateTransportTime(ttl_dist);
-	// (del_time < pack.deadline)? flag = true : flag = false;
-	// return flag;
 }
 
 //isMatch checks if free drone can arrive at 
 //the destination before package deadline
 var isMatch = function(drone, pack){
-	var dist     = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, pack.destination.latitude, pack.destination.longitude);
+	var dist = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, depotLat, depotLong)
+		+ distanceBetweenPointsKm(depotLat, depotLong, pack.destination.latitude, pack.destination.longitude);
 	return canDeliver(dist, pack)
-	// var now      = Math.floor(new Date().getTime()/1000); //get current time in seconds
-	// var del_time = now + calculateTransportTime(dist);
-	// (del_time < pack.deadline)? flag = true : flag = false;
-	// return flag;
 }
 
 var canDeliver = function(dist, pack){
@@ -196,6 +180,7 @@ var resetAll = function(){
 
 module.exports = {
 	initializeMatching: initializeMatching,
-	retrieveDrones: promiseDrone,
-	retrievePackages: promisePackage
+	promiseDrone: promiseDrone,
+	promisePackage: promisePackage,
+	promisematchPackage: promisematchPackage
 }
