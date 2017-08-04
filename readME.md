@@ -49,9 +49,7 @@ When the drones are being compared, sorting them by "amount of time for delivery
 	
 Can my solution handle dispatching thousands of jobs per second to thousands of drivers. Right now the answer is no, there are changes that need to be made in order to keep up with that level of traffic to the server. The biggest change would be in the way we deliver the scheduled jobs to its respective driver. 
 
-Right now parings ar delivered in bulk, but in a system like that we would need to deliver the assignment to a driver based on a driver Id. Once that is implemented then my soultion may still be viable given a few optimizations for traffic volume and number of calculations.
-
-This is dependent on whether a request for job pairing is done in batches or if they are requested by the driver themselves. Knowing this we can modify the request parameters and format the response appropriately for batch or individual pairings.
+Right now results are delivered in bulk, but in a system with many jobs and drivers, we would need to deliver the assignment to a driver based on a driver Id. This depends on whether a request for job pairing is done in a batch or if they are requested by the driver themselves. Knowing this we can modify the request parameters and format the response appropriately for batch or individual results. Once that is implemented then my soultion may still be viable given a few optimizations for traffic volume and number of calculations.
 
 Currently my soultion serves a web page with the pairing lists as the payload. I would change this to respond with only the JSON data.
 
