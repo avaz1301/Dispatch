@@ -127,8 +127,7 @@ var isOccMatch = function(drone, pack){
 //isMatch checks if free drone can arrive at 
 //the destination before package deadline
 var isMatch = function(drone, pack){
-	var dist = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, depotLat, depotLong)
-		+ distanceBetweenPointsKm(depotLat, depotLong, pack.destination.latitude, pack.destination.longitude);
+	var dist = distanceBetweenPointsKm(drone.location.latitude, drone.location.longitude, depotLat, depotLong);
 	return canDeliver(dist, pack)
 }
 
